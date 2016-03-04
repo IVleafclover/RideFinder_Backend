@@ -8,10 +8,22 @@ import org.elasticsearch.client.Client;
 
 import de.htwk_leipzig.ridefinder_backend.model.Ride;
 
+/**
+ * ermoeglicht Schreibzugriffe auf den ElasticSearch-Index
+ *
+ * @author Christian
+ *
+ */
 public class IndexUpdater {
 
-	public static void write(Ride ride, Client client) {
-		Map<String, Object> json = new HashMap<String, Object>();
+	/**
+	 * fuegt den ElasticSearch-Index eine Mitfahrgelegenheit hinzu
+	 *
+	 * @param ride
+	 * @param client
+	 */
+	public static void write(final Ride ride, final Client client) {
+		final Map<String, Object> json = new HashMap<String, Object>();
 		json.put("from", ride.getFrom());
 		json.put("to", ride.getTo());
 		json.put("date", ride.getDate());
@@ -24,13 +36,7 @@ public class IndexUpdater {
 		json.put("seat", Integer.toString(ride.getSeat()));
 		json.put("provider", ride.getProvider());
 
-		IndexResponse response = client
-				.prepareIndex("rides", "ride", ride.getLink()).setSource(json)
-				.get();
+		@SuppressWarnings("unused")
+		final IndexResponse response = client.prepareIndex("rides", "ride", ride.getLink()).setSource(json).get();
 	}
-
-	public static void update(Ride ride) {
-
-	}
-
 }

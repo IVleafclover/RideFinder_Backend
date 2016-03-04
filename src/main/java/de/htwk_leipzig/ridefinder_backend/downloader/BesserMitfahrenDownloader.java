@@ -17,12 +17,33 @@ import de.htwk_leipzig.ridefinder_backend.elasticsearch.ElasticSearchClient;
 import de.htwk_leipzig.ridefinder_backend.elasticsearch.IndexUpdater;
 import de.htwk_leipzig.ridefinder_backend.model.Ride;
 
+/**
+ * Downloader fuer BesserMitfahren
+ *
+ * @author Christian
+ *
+ */
 public class BesserMitfahrenDownloader {
 
+	/**
+	 * Domain zu BesserMitfahren
+	 */
 	private static final String DOMAIN = "https://www.bessermitfahren.de";
 
+	/**
+	 * Vermerk auf aktuelle Seitenzahl der Suchergebnisse, da pro Seite nur eine
+	 * beschraenkte Anzahl angezeigt wird
+	 */
 	private static int actualPage = 1;
 
+	/**
+	 * greift auf Seite zu, laedt Mitfahrgelegenheiten von dieser herunter und
+	 * sendet diese an ElasticSearch weiter
+	 *
+	 * @param from
+	 * @param to
+	 * @param date
+	 */
 	public static void downloadRides(final String from, final String to, final String date) {
 
 		try {
@@ -64,17 +85,23 @@ public class BesserMitfahrenDownloader {
 
 			client.close();
 		} catch (final FailingHttpStatusCodeException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (final MalformedURLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (final IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
+	/**
+	 * liest Suchergebnisse anhand aus
+	 *
+	 * @param resultPage
+	 * @param from
+	 * @param to
+	 * @return Liste von ausgelesenen Mitfahrgelegenhieten
+	 */
+	@SuppressWarnings("unchecked")
 	private static List<Ride> parseResults(final HtmlPage resultPage, final String from, final String to) {
 		final List<Ride> rides = new ArrayList<Ride>();
 
@@ -123,7 +150,6 @@ public class BesserMitfahrenDownloader {
 				actualPage++;
 				rides.addAll(parseResults((HtmlPage) nextPageLink.click(), from, to));
 			} catch (final IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}

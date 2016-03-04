@@ -19,11 +19,28 @@ import de.htwk_leipzig.ridefinder_backend.elasticsearch.ElasticSearchClient;
 import de.htwk_leipzig.ridefinder_backend.elasticsearch.IndexUpdater;
 import de.htwk_leipzig.ridefinder_backend.model.Ride;
 
+/**
+ * Downloader fuer Fahrgemeinschaft
+ *
+ * @author Christian
+ *
+ */
 public class FahrgemeinschaftDownloader {
 
+	/**
+	 * Domain zu Fahrgemeinschaft
+	 */
 	private static String DOMAIN = "https://www.fahrgemeinschaft.de";
 
-	public static void downloadRides(String from, String to, String date) {
+	/**
+	 * greift auf Seite zu, laedt Mitfahrgelegenheiten von dieser herunter und
+	 * sendet diese an ElasticSearch weiter
+	 *
+	 * @param from
+	 * @param to
+	 * @param date
+	 */
+	public static void downloadRides(final String from, final String to, final String date) {
 
 		try {
 			// Browser starten
@@ -35,14 +52,10 @@ public class FahrgemeinschaftDownloader {
 			homePage = webClient.getPage(DOMAIN);
 
 			// Form-Elemente laden
-			final HtmlTextInput fromInput = (HtmlTextInput) homePage
-					.getElementById("edtOrigin");
-			final HtmlTextInput toInput = (HtmlTextInput) homePage
-					.getElementById("edtDestination");
-			final HtmlTextInput dateInput = homePage
-					.getElementByName("selDate");
-			final HtmlSubmitInput submitButton = homePage
-					.getElementByName("btnSend");
+			final HtmlTextInput fromInput = (HtmlTextInput) homePage.getElementById("edtOrigin");
+			final HtmlTextInput toInput = (HtmlTextInput) homePage.getElementById("edtDestination");
+			final HtmlTextInput dateInput = homePage.getElementByName("selDate");
+			final HtmlSubmitInput submitButton = homePage.getElementByName("btnSend");
 
 			// Form-Elemente befuellen
 			fromInput.setValueAttribute(from);
@@ -55,60 +68,64 @@ public class FahrgemeinschaftDownloader {
 			// Form abschicken und Ergebnisseite als Resultat erhalten
 			final HtmlPage resultPage = submitButton.click();
 
-			List<Ride> rides = parseResults(resultPage, from, to, date);
+			final List<Ride> rides = parseResults(resultPage, from, to, date);
 
 			webClient.close();
 
-			ElasticSearchClient client = new ElasticSearchClient();
+			final ElasticSearchClient client = new ElasticSearchClient();
 			client.connect();
 
-			for (Ride ride : rides) {
+			for (final Ride ride : rides) {
 				IndexUpdater.write(ride, client.getClient());
 			}
 
 			client.close();
-		} catch (FailingHttpStatusCodeException e) {
-			// TODO Auto-generated catch block
+		} catch (final FailingHttpStatusCodeException e) {
 			e.printStackTrace();
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
+		} catch (final MalformedURLException e) {
 			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
+		} catch (final IOException e) {
 			e.printStackTrace();
 		}
 	}
 
-	private static List<Ride> parseResults(HtmlPage resultPage, String from,
-			String to, String date) {
-		List<Ride> rides = new ArrayList<Ride>();
+	/**
+	 * liest Suchergebnisse anhand aus
+	 *
+	 * @param resultPage
+	 * @param from
+	 * @param to
+	 * @param date
+	 * @return Liste von ausgelesenen Mitfahrgelegenhieten
+	 */
+	@SuppressWarnings("unchecked")
+	private static List<Ride> parseResults(final HtmlPage resultPage, final String from, final String to,
+			final String date) {
+		final List<Ride> rides = new ArrayList<Ride>();
 
-		List<DomNode> times = (List<DomNode>) resultPage
+		final List<DomNode> times = (List<DomNode>) resultPage
 				.getByXPath("//*[contains(concat(' ', @class, ' '), ' time ')]");
-		List<DomNode> prices = (List<DomNode>) resultPage
+		final List<DomNode> prices = (List<DomNode>) resultPage
 				.getByXPath("//*[contains(concat(' ', @class, ' '), ' costs ')]");
-		List<DomNode> seats = (List<DomNode>) resultPage
-				.getByXPath("//*[contains(concat(' ', @class, ' '), ' ion-person-stalker ') and contains(concat(' ', @class, ' '), ' icon ')]/span");
-		List<DomNode> links = (List<DomNode>) resultPage
+		final List<DomNode> seats = (List<DomNode>) resultPage.getByXPath(
+				"//*[contains(concat(' ', @class, ' '), ' ion-person-stalker ') and contains(concat(' ', @class, ' '), ' icon ')]/span");
+		final List<DomNode> links = (List<DomNode>) resultPage
 				.getByXPath("//a[contains(concat(' ', @class, ' '), ' clearfixafter ')]");
 
 		for (int i = 0; i < times.size(); i++) {
-			String time = times.get(i).getTextContent().replace(" Uhr", "");
+			final String time = times.get(i).getTextContent().replace(" Uhr", "");
 
-			int seat = Integer.parseInt(seats.get(i).getTextContent());
+			final int seat = Integer.parseInt(seats.get(i).getTextContent());
 
-			String priceString = prices.get(i).getTextContent()
-					.replaceAll("[^0-9,]+", "").replace(",", ".");
+			final String priceString = prices.get(i).getTextContent().replaceAll("[^0-9,]+", "").replace(",", ".");
 			Float price = null;
 			if (!priceString.isEmpty()) {
 				price = Float.parseFloat(priceString);
 			}
 
-			String link = DOMAIN
-					+ ((HtmlAnchor) links.get(i)).getAttribute("href");
+			final String link = DOMAIN + ((HtmlAnchor) links.get(i)).getAttribute("href");
 
-			Ride ride = new Ride(from, to, time, price, seat, date, link,
-					"fahrgemeinschaft");
+			final Ride ride = new Ride(from, to, time, price, seat, date, link, "fahrgemeinschaft");
 
 			rides.add(ride);
 

@@ -13,8 +13,22 @@ import com.gargoylesoftware.htmlunit.html.HtmlButton;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
 
+/**
+ * Downloader fuer Bla Bla Car
+ *
+ * @author Christian
+ *
+ */
 public class BlaBlaCarDownloader {
 
+	/**
+	 * greift auf Seite zu, laedt Mitfahrgelegenheiten von dieser herunter und
+	 * sendet diese an ElasticSearch weiter
+	 *
+	 * @param from
+	 * @param to
+	 * @param date
+	 */
 	public static void downloadRides(final String from, final String to, final String date) {
 
 		try {
@@ -45,17 +59,23 @@ public class BlaBlaCarDownloader {
 
 			webClient.close();
 		} catch (final FailingHttpStatusCodeException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (final MalformedURLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (final IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
+	/**
+	 * liest Suchergebnisse anhand aus
+	 *
+	 * @param resultPage
+	 * @param from
+	 * @param to
+	 * @param date
+	 */
+	@SuppressWarnings("unchecked")
 	private static void parseResults(final HtmlPage resultPage, final String from, final String to, final String date) {
 		// warten bis JavaScript geladen wird
 		try {
@@ -101,7 +121,6 @@ public class BlaBlaCarDownloader {
 				final HtmlAnchor nextPageLink = (HtmlAnchor) nextPage.get(0);
 				parseResults((HtmlPage) nextPageLink.click(), from, to, date);
 			} catch (final IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
