@@ -172,6 +172,5 @@ public class BesserMitfahrenDownloader implements DownloaderInterface {
 		}
 
 		return rides;
-
 	}
 }

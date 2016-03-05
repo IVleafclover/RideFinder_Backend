@@ -2,6 +2,7 @@ package de.htwk_leipzig.ridefinder_backend.downloader;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
@@ -12,6 +13,10 @@ import com.gargoylesoftware.htmlunit.html.HtmlAnchor;
 import com.gargoylesoftware.htmlunit.html.HtmlButton;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
+
+import de.htwk_leipzig.ridefinder_backend.elasticsearch.ElasticSearchClient;
+import de.htwk_leipzig.ridefinder_backend.elasticsearch.IndexUpdater;
+import de.htwk_leipzig.ridefinder_backend.model.Ride;
 
 /**
  * Downloader fuer Bla Bla Car
@@ -25,6 +30,18 @@ public class BlaBlaCarDownloader implements DownloaderInterface {
 	 * Singleton Instanz
 	 */
 	private static BlaBlaCarDownloader instance;
+
+	/**
+	 * Domain zu Fahrgemeinschaft
+	 */
+	private static String DOMAIN = "https://www.blablacar.de";
+
+	// TODO aktuelle Uhrzeit verwenden
+	/**
+	 * Uhrzeit der letzten Mitfahrgelegenheit, wird benoetigt um festzustellen,
+	 * ob es sich um den naechsten Tag handelt
+	 */
+	private String lastTime = "00:00";
 
 	/**
 	 * gibt die Singleton Instanz wieder
@@ -55,7 +72,7 @@ public class BlaBlaCarDownloader implements DownloaderInterface {
 			// Startseite laden
 			HtmlPage homePage;
 
-			homePage = webClient.getPage("https://www.blablacar.de/");
+			homePage = webClient.getPage(DOMAIN);
 
 			// Form-Elemente laden
 			final HtmlTextInput fromInput = (HtmlTextInput) homePage.getElementById("search_from_name");
@@ -72,9 +89,18 @@ public class BlaBlaCarDownloader implements DownloaderInterface {
 			// Form abschicken und Ergebnisseite als Resultat erhalten
 			final HtmlPage resultPage = submitButton.click();
 
-			parseResults(resultPage, from, to, date);
+			final List<Ride> rides = parseResults(resultPage, from, to, date);
 
 			webClient.close();
+
+			final ElasticSearchClient client = new ElasticSearchClient();
+			client.connect();
+
+			for (final Ride ride : rides) {
+				IndexUpdater.write(ride, client.getClient());
+			}
+
+			client.close();
 		} catch (final FailingHttpStatusCodeException e) {
 			e.printStackTrace();
 		} catch (final MalformedURLException e) {
@@ -91,16 +117,19 @@ public class BlaBlaCarDownloader implements DownloaderInterface {
 	 * @param from
 	 * @param to
 	 * @param date
+	 * @return Liste von ausgelesenen Mitfahrgelegenheiten
 	 */
 	@SuppressWarnings("unchecked")
-	private static void parseResults(final HtmlPage resultPage, final String from, final String to, final String date) {
+	private static List<Ride> parseResults(final HtmlPage resultPage, final String from, final String to,
+			final String date) {
 		// warten bis JavaScript geladen wird
 		try {
-			Thread.sleep(1000);
+			Thread.sleep(5000);
 		} catch (final InterruptedException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
+
+		final List<Ride> rides = new ArrayList<Ride>();
 
 		final List<DomNode> times = (List<DomNode>) resultPage
 				.getByXPath("//*[contains(concat(' ', @class, ' '), ' time ')]");
@@ -108,15 +137,28 @@ public class BlaBlaCarDownloader implements DownloaderInterface {
 				.getByXPath("//*[contains(concat(' ', @class, ' '), ' price ')]/strong/span");
 		final List<DomNode> seats = (List<DomNode>) resultPage
 				.getByXPath("//*[contains(concat(' ', @class, ' '), ' availability ')]/strong");
+		final List<DomNode> links = (List<DomNode>) resultPage
+				.getByXPath("//*[contains(concat(' ', @class, ' '), ' trip-search-oneresult ')]");
 
-		final List<DomNode> nextPage = (List<DomNode>) resultPage
-				.getByXPath("//*[contains(concat(' ', @class, ' '), ' next ')]/a");
+		final List<DomNode> nextPage = (List<DomNode>) resultPage.getByXPath(
+				"//*[contains(concat(' ', @class, ' '), ' next ') and not(contains(concat(' ', @class, ' '), ' disabled '))]/a");
 
 		// lese Ergebnisse und wandele in Fahrten um
 		for (int i = 0; i < times.size(); i++) {
 			String time = times.get(i).getTextContent();
-			time = time.split("-")[1];
-			time = time.substring(1);
+			if (time.split("-").length > 1) {
+				time = time.split("-")[1];
+				time = time.substring(1);
+				time = time.replace(" uhr", "");
+			} else {
+				time = time.split("~")[1];
+			}
+
+			if (isNewDate(time)) {
+				instance.lastTime = "00:00";
+				return rides;
+			}
+			instance.lastTime = time;
 
 			final float price = Float.parseFloat(prices.get(i).getTextContent().replaceAll("[^0-9]+", ""));
 
@@ -126,21 +168,38 @@ public class BlaBlaCarDownloader implements DownloaderInterface {
 				seat = Integer.parseInt(seatString);
 			}
 
-			// TODO fix bla bla car downloader
-			// Ride ride = new Ride(from, to, time, price, seat, date);
-			// System.out.println(ride);
+			final String link = DOMAIN + ((HtmlAnchor) links.get(i)).getAttribute("href");
 
+			final Ride ride = new Ride(from, to, time, price, seat, date, link, "blablacar");
+
+			rides.add(ride);
+
+			System.out.println(ride);
 		}
 
 		// wenn es weitere Ergebnisseiten gibt, rufe und lese diese aus
 		if (!nextPage.isEmpty()) {
 			try {
 				final HtmlAnchor nextPageLink = (HtmlAnchor) nextPage.get(0);
-				parseResults((HtmlPage) nextPageLink.click(), from, to, date);
+				rides.addAll(parseResults((HtmlPage) nextPageLink.click(), from, to, date));
 			} catch (final IOException e) {
 				e.printStackTrace();
 			}
 		}
+
+		return rides;
+	}
+
+	/**
+	 * prueft ob die Uhrzeit der neuen Mitfahrgelegenheit kleiner (vorher) als
+	 * die der letzten ist, dadurch wird festgestellt, ob es sich um ein neues
+	 * Datum handelt
+	 *
+	 * @param time
+	 * @return ist neue Zeit vorher
+	 */
+	private static boolean isNewDate(final String time) {
+		return time.compareTo(instance.lastTime) < 1;
 	}
 
 }
