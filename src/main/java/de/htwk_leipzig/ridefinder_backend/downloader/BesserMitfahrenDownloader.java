@@ -23,7 +23,12 @@ import de.htwk_leipzig.ridefinder_backend.model.Ride;
  * @author Christian
  *
  */
-public class BesserMitfahrenDownloader {
+public class BesserMitfahrenDownloader implements DownloaderInterface {
+
+	/**
+	 * Singleton Instanz
+	 */
+	private static BesserMitfahrenDownloader instance;
 
 	/**
 	 * Domain zu BesserMitfahren
@@ -37,6 +42,18 @@ public class BesserMitfahrenDownloader {
 	private static int actualPage = 1;
 
 	/**
+	 * gibt die Singleton Instanz wieder
+	 *
+	 * @return Singleton
+	 */
+	public static BesserMitfahrenDownloader getInstance() {
+		if (BesserMitfahrenDownloader.instance == null) {
+			BesserMitfahrenDownloader.instance = new BesserMitfahrenDownloader();
+		}
+		return instance;
+	}
+
+	/**
 	 * greift auf Seite zu, laedt Mitfahrgelegenheiten von dieser herunter und
 	 * sendet diese an ElasticSearch weiter
 	 *
@@ -44,7 +61,7 @@ public class BesserMitfahrenDownloader {
 	 * @param to
 	 * @param date
 	 */
-	public static void downloadRides(final String from, final String to, final String date) {
+	public void downloadRides(final String from, final String to, final String date) {
 
 		try {
 			// Browser starten
@@ -128,7 +145,7 @@ public class BesserMitfahrenDownloader {
 				price = Float.parseFloat(priceString);
 			}
 
-			final int seat = Integer.parseInt(seats.get(i).getTextContent());
+			final int seat = Integer.parseInt(seats.get(i).getTextContent().replaceAll(">", ""));
 
 			final String dateString = dates.get(i).getTextContent();
 			String date = dateString.substring(dateString.length() - 8, dateString.length());

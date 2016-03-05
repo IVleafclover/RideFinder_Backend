@@ -25,12 +25,29 @@ import de.htwk_leipzig.ridefinder_backend.model.Ride;
  * @author Christian
  *
  */
-public class FahrgemeinschaftDownloader {
+public class FahrgemeinschaftDownloader implements DownloaderInterface {
+
+	/**
+	 * Singleton Instanz
+	 */
+	private static FahrgemeinschaftDownloader instance;
 
 	/**
 	 * Domain zu Fahrgemeinschaft
 	 */
 	private static String DOMAIN = "https://www.fahrgemeinschaft.de";
+
+	/**
+	 * gibt die Singleton Instanz wieder
+	 *
+	 * @return Singleton
+	 */
+	public static FahrgemeinschaftDownloader getInstance() {
+		if (FahrgemeinschaftDownloader.instance == null) {
+			FahrgemeinschaftDownloader.instance = new FahrgemeinschaftDownloader();
+		}
+		return instance;
+	}
 
 	/**
 	 * greift auf Seite zu, laedt Mitfahrgelegenheiten von dieser herunter und
@@ -40,7 +57,7 @@ public class FahrgemeinschaftDownloader {
 	 * @param to
 	 * @param date
 	 */
-	public static void downloadRides(final String from, final String to, final String date) {
+	public void downloadRides(final String from, final String to, final String date) {
 
 		try {
 			// Browser starten

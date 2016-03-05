@@ -19,7 +19,24 @@ import com.gargoylesoftware.htmlunit.html.HtmlTextInput;
  * @author Christian
  *
  */
-public class BlaBlaCarDownloader {
+public class BlaBlaCarDownloader implements DownloaderInterface {
+
+	/**
+	 * Singleton Instanz
+	 */
+	private static BlaBlaCarDownloader instance;
+
+	/**
+	 * gibt die Singleton Instanz wieder
+	 *
+	 * @return Singleton
+	 */
+	public static BlaBlaCarDownloader getInstance() {
+		if (BlaBlaCarDownloader.instance == null) {
+			BlaBlaCarDownloader.instance = new BlaBlaCarDownloader();
+		}
+		return instance;
+	}
 
 	/**
 	 * greift auf Seite zu, laedt Mitfahrgelegenheiten von dieser herunter und
@@ -29,7 +46,7 @@ public class BlaBlaCarDownloader {
 	 * @param to
 	 * @param date
 	 */
-	public static void downloadRides(final String from, final String to, final String date) {
+	public void downloadRides(final String from, final String to, final String date) {
 
 		try {
 			// Browser starten
