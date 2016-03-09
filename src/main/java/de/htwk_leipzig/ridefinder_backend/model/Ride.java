@@ -194,8 +194,8 @@ public class Ride {
 
 	@Override
 	public String toString() {
-		return "Ride [from=" + from + ", to=" + to + ", time=" + time + ", price=" + price + ", seat=" + seat
-				+ ", date=" + date + ", link=" + link + ", provider=" + provider + "]";
+		return "Ride [id=" + getId() + ", from=" + from + ", to=" + to + ", time=" + time + ", price=" + price
+				+ ", seat=" + seat + ", date=" + date + ", link=" + link + ", provider=" + provider + "]";
 	}
 
 	@Override
@@ -280,4 +280,12 @@ public class Ride {
 		return true;
 	}
 
+	/**
+	 * gibt die Id des Suchergebnisses wieder
+	 *
+	 * @return Id
+	 */
+	public String getId() {
+		return getLink() + "-" + getDate();
+	}
 }

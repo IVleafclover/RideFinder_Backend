@@ -33,13 +33,13 @@ public class BesserMitfahrenDownloader implements DownloaderInterface {
 	/**
 	 * Domain zu BesserMitfahren
 	 */
-	private static final String DOMAIN = "https://www.bessermitfahren.de";
+	private final String DOMAIN = "https://www.bessermitfahren.de";
 
 	/**
 	 * Vermerk auf aktuelle Seitenzahl der Suchergebnisse, da pro Seite nur eine
 	 * beschraenkte Anzahl angezeigt wird
 	 */
-	private static int actualPage = 1;
+	private int actualPage = 1;
 
 	/**
 	 * gibt die Singleton Instanz wieder
@@ -119,7 +119,7 @@ public class BesserMitfahrenDownloader implements DownloaderInterface {
 	 * @return Liste von ausgelesenen Mitfahrgelegenhieten
 	 */
 	@SuppressWarnings("unchecked")
-	private static List<Ride> parseResults(final HtmlPage resultPage, final String from, final String to) {
+	private List<Ride> parseResults(final HtmlPage resultPage, final String from, final String to) {
 		final List<Ride> rides = new ArrayList<Ride>();
 
 		final List<DomNode> times = (List<DomNode>) resultPage

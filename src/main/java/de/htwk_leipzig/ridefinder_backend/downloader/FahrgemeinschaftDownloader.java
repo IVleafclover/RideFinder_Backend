@@ -35,7 +35,7 @@ public class FahrgemeinschaftDownloader implements DownloaderInterface {
 	/**
 	 * Domain zu Fahrgemeinschaft
 	 */
-	private static String DOMAIN = "https://www.fahrgemeinschaft.de";
+	private final String DOMAIN = "https://www.fahrgemeinschaft.de";
 
 	/**
 	 * gibt die Singleton Instanz wieder
@@ -116,8 +116,7 @@ public class FahrgemeinschaftDownloader implements DownloaderInterface {
 	 * @return Liste von ausgelesenen Mitfahrgelegenhieten
 	 */
 	@SuppressWarnings("unchecked")
-	private static List<Ride> parseResults(final HtmlPage resultPage, final String from, final String to,
-			final String date) {
+	private List<Ride> parseResults(final HtmlPage resultPage, final String from, final String to, final String date) {
 		final List<Ride> rides = new ArrayList<Ride>();
 
 		final List<DomNode> times = (List<DomNode>) resultPage

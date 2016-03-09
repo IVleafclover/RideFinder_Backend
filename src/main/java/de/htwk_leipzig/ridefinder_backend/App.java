@@ -6,7 +6,11 @@ import java.util.logging.Level;
 
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 
-import de.htwk_leipzig.ridefinder_backend.elasticsearch.Delete;
+import de.htwk_leipzig.ridefinder_backend.downloader.BesserMitfahrenDownloader;
+import de.htwk_leipzig.ridefinder_backend.downloader.BlaBlaCarDownloader;
+import de.htwk_leipzig.ridefinder_backend.downloader.FahrgemeinschaftDownloader;
+import de.htwk_leipzig.ridefinder_backend.threads.DeleteThread;
+import de.htwk_leipzig.ridefinder_backend.threads.DownloadThread;
 
 /**
  * Einstiegspunkt des Backends
@@ -31,10 +35,10 @@ public class App {
 		// Log fuer HTMLUnit deaktivieren
 		java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(Level.OFF);
 
-		// new DownloadThread(FahrgemeinschaftDownloader.getInstance()).start();
-		// new DownloadThread(BlaBlaCarDownloader.getInstance()).start();
-		// new DownloadThread(BesserMitfahrenDownloader.getInstance()).start();
+		new DownloadThread(FahrgemeinschaftDownloader.getInstance(), true).start();
+		new DownloadThread(BlaBlaCarDownloader.getInstance(), true).start();
+		new DownloadThread(BesserMitfahrenDownloader.getInstance(), false).start();
 
-		Delete.deleteWithOutClient("05.03.2016");
+		new DeleteThread().start();
 	}
 }

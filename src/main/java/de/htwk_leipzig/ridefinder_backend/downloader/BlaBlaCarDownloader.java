@@ -2,7 +2,10 @@ package de.htwk_leipzig.ridefinder_backend.downloader;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
@@ -34,14 +37,33 @@ public class BlaBlaCarDownloader implements DownloaderInterface {
 	/**
 	 * Domain zu Fahrgemeinschaft
 	 */
-	private static String DOMAIN = "https://www.blablacar.de";
+	private final String DOMAIN = "https://www.blablacar.de";
 
-	// TODO aktuelle Uhrzeit verwenden
 	/**
 	 * Uhrzeit der letzten Mitfahrgelegenheit, wird benoetigt um festzustellen,
 	 * ob es sich um den naechsten Tag handelt
 	 */
-	private String lastTime = "00:00";
+	private String lastTime;
+
+	/**
+	 * zum Auslesen und Konvertieren der aktuellen Zeit in einen String
+	 */
+	private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+
+	/**
+	 * zum Auslesen und Konvertieren des aktuellen Datums in einen String
+	 */
+	private final SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
+
+	/**
+	 * wie viele Tage heruntergeladen werden sollen
+	 */
+	private final int numberOfDaysToDownload = 1;
+
+	/**
+	 * der Nummer des aktuellen Tags beim Auslesen
+	 */
+	private int actualDay;
 
 	/**
 	 * gibt die Singleton Instanz wieder
@@ -66,6 +88,13 @@ public class BlaBlaCarDownloader implements DownloaderInterface {
 	public void downloadRides(final String from, final String to, final String date) {
 
 		try {
+			// aktuelle Uhrzeit fuer Auslesen der Suchergebnisse setzen
+			final Calendar cal = Calendar.getInstance();
+			lastTime = timeFormat.format(cal.getTime());
+
+			// den aktuellen Tag auf den ersten Tag setzen
+			actualDay = 0;
+
 			// Browser starten
 			final WebClient webClient = new WebClient(BrowserVersion.FIREFOX_38);
 
@@ -120,8 +149,7 @@ public class BlaBlaCarDownloader implements DownloaderInterface {
 	 * @return Liste von ausgelesenen Mitfahrgelegenheiten
 	 */
 	@SuppressWarnings("unchecked")
-	private static List<Ride> parseResults(final HtmlPage resultPage, final String from, final String to,
-			final String date) {
+	private List<Ride> parseResults(final HtmlPage resultPage, final String from, final String to, final String date) {
 		// warten bis JavaScript geladen wird
 		try {
 			Thread.sleep(5000);
@@ -150,13 +178,16 @@ public class BlaBlaCarDownloader implements DownloaderInterface {
 				time = time.split("-")[1];
 				time = time.substring(1);
 				time = time.replace(" uhr", "");
+				time = time.replace(" Uhr", "");
 			} else {
 				time = time.split("~")[1];
 			}
 
 			if (isNewDate(time)) {
-				instance.lastTime = "00:00";
-				return rides;
+				actualDay++;
+				if (isNumberOfDaysReach()) {
+					return rides;
+				}
 			}
 			instance.lastTime = time;
 
@@ -170,7 +201,16 @@ public class BlaBlaCarDownloader implements DownloaderInterface {
 
 			final String link = DOMAIN + ((HtmlAnchor) links.get(i)).getAttribute("href");
 
-			final Ride ride = new Ride(from, to, time, price, seat, date, link, "blablacar");
+			final Calendar dateCalendar = Calendar.getInstance();
+			try {
+				dateCalendar.setTime(dateFormat.parse(date));
+			} catch (final ParseException e) {
+				e.printStackTrace();
+			}
+			dateCalendar.add(Calendar.DATE, actualDay);
+			final String dateForRide = dateFormat.format(dateCalendar.getTime());
+
+			final Ride ride = new Ride(from, to, time, price, seat, dateForRide, link, "blablacar");
 
 			rides.add(ride);
 
@@ -198,8 +238,14 @@ public class BlaBlaCarDownloader implements DownloaderInterface {
 	 * @param time
 	 * @return ist neue Zeit vorher
 	 */
-	private static boolean isNewDate(final String time) {
-		return time.compareTo(instance.lastTime) < 1;
+	private boolean isNewDate(final String time) {
+		return time.compareTo(instance.lastTime) < 0;
 	}
 
+	/**
+	 * @return ist die gewuenschte Anzahl an Tagen ausgelesen
+	 */
+	private boolean isNumberOfDaysReach() {
+		return actualDay >= numberOfDaysToDownload;
+	}
 }

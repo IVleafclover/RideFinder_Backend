@@ -35,8 +35,9 @@ public class IndexUpdater {
 		}
 		json.put("seat", Integer.toString(ride.getSeat()));
 		json.put("provider", ride.getProvider());
+		json.put("link", ride.getLink());
 
 		@SuppressWarnings("unused")
-		final IndexResponse response = client.prepareIndex("rides", "ride", ride.getLink()).setSource(json).get();
+		final IndexResponse response = client.prepareIndex("rides", "ride", ride.getId()).setSource(json).get();
 	}
 }
