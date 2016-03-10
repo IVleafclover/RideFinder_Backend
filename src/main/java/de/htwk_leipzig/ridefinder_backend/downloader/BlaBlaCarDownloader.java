@@ -66,6 +66,11 @@ public class BlaBlaCarDownloader implements DownloaderInterface {
 	private int actualDay;
 
 	/**
+	 * wie lange auf JavaScript gewartet wird
+	 */
+	private final int timeToWaitForJavaScript = 10000;
+
+	/**
 	 * gibt die Singleton Instanz wieder
 	 *
 	 * @return Singleton
@@ -88,9 +93,15 @@ public class BlaBlaCarDownloader implements DownloaderInterface {
 	public void downloadRides(final String from, final String to, final String date) {
 
 		try {
-			// aktuelle Uhrzeit fuer Auslesen der Suchergebnisse setzen
-			final Calendar cal = Calendar.getInstance();
-			lastTime = timeFormat.format(cal.getTime());
+			if (isSearchingForToday(date)) {
+				// aktuelle Uhrzeit fuer Auslesen der Suchergebnisse setzen
+				final Calendar cal = Calendar.getInstance();
+				lastTime = timeFormat.format(cal.getTime());
+			} else {
+				// wenn nicht fuer heute egsucht, ist letzte Uhrzeit
+				// 00:00
+				lastTime = "00:00";
+			}
 
 			// den aktuellen Tag auf den ersten Tag setzen
 			actualDay = 0;
@@ -140,6 +151,18 @@ public class BlaBlaCarDownloader implements DownloaderInterface {
 	}
 
 	/**
+	 * wird fuer heute gesucht
+	 *
+	 * @param date
+	 * @return wird fuer heute gesucht
+	 */
+	private boolean isSearchingForToday(final String date) {
+		final Calendar cal = Calendar.getInstance();
+		final String today = dateFormat.format(cal.getTime());
+		return today.equals(date);
+	}
+
+	/**
 	 * liest Suchergebnisse anhand aus
 	 *
 	 * @param resultPage
@@ -152,7 +175,7 @@ public class BlaBlaCarDownloader implements DownloaderInterface {
 	private List<Ride> parseResults(final HtmlPage resultPage, final String from, final String to, final String date) {
 		// warten bis JavaScript geladen wird
 		try {
-			Thread.sleep(5000);
+			Thread.sleep(timeToWaitForJavaScript);
 		} catch (final InterruptedException e1) {
 			e1.printStackTrace();
 		}
