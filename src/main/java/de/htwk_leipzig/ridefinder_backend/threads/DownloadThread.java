@@ -22,7 +22,9 @@ public class DownloadThread extends Thread {
 	/**
 	 * die unterstuetzten Orte
 	 */
-	private final static String[] destinations = { "Leipzig", "Dresden" };
+	private final String[] destinations = { "Berlin", "Bielefeld", "Bochum", "Bonn", "Bremen", "Dortmund", "Dresden",
+			"Duisburg", "Düsseldorf", "Essen", "Frankfurt am Main", "Hamburg", "Hannover", "Köln", "Leipzig", "München",
+			"Münster", "Nürnberg", "Stuttgart", "Wuppertal" };
 
 	/**
 	 * Downloader, welcher ausgefuehrt werden soll
