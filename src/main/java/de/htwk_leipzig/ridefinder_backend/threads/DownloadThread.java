@@ -62,21 +62,28 @@ public class DownloadThread extends Thread {
 	public void run() {
 		while (true) {
 			if (!isRequestForEachDayNecessary()) {
-				// Downloader liefert mit einer Anfrage Ergebnisse zu mehreren
+				// Downloader liefert mit einer Anfrage Ergebnisse zu
+				// mehreren
 				// Datums
 				final String date = dateFormat.format(new Date());
 
 				for (final String from : destinations) {
 					for (final String to : destinations) {
 						if (!from.equals(to)) {
-							downloader.downloadRides(from, to, date);
-							// Thread schlafen schicken, um nicht geblacklisted
-							// zu
-							// werden
+							try {
+								downloader.downloadRides(from, to, date);
+								// Thread schlafen schicken, um nicht
+								// geblacklisted
+								// zu
+								// werden
+							} catch (final Exception e) {
+								System.out.println("ein Error beim Downloaden ist aufgetreten, fahre fort");
+							}
 							try {
 								TimeUnit.SECONDS.sleep(secondsToSleep);
 							} catch (final InterruptedException e) {
 								e.printStackTrace();
+								System.out.println("ein Error beim Downloaden ist aufgetreten, fahre fort");
 							}
 						}
 					}
@@ -92,14 +99,19 @@ public class DownloadThread extends Thread {
 					for (final String from : destinations) {
 						for (final String to : destinations) {
 							if (!from.equals(to)) {
-								downloader.downloadRides(from, to, date);
-								// Thread schlafen schicken, um nicht
-								// geblacklisted
-								// zu werden
+								try {
+									downloader.downloadRides(from, to, date);
+									// Thread schlafen schicken, um nicht
+									// geblacklisted
+									// zu werden
+								} catch (final Exception e) {
+									System.out.println("ein Error beim Downloaden ist aufgetreten, fahre fort");
+								}
 								try {
 									TimeUnit.SECONDS.sleep(secondsToSleep);
 								} catch (final InterruptedException e) {
 									e.printStackTrace();
+									System.out.println("ein Error beim Downloaden ist aufgetreten, fahre fort");
 								}
 							}
 						}

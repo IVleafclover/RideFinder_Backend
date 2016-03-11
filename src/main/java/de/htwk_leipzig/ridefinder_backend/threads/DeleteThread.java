@@ -1,6 +1,5 @@
 package de.htwk_leipzig.ridefinder_backend.threads;
 
-import java.net.UnknownHostException;
 import java.util.Calendar;
 import java.util.concurrent.TimeUnit;
 
@@ -33,13 +32,17 @@ public class DeleteThread extends Thread {
 	@Override
 	public void run() {
 		while (true) {
-			deleteRidesForYesterday();
+			try {
+				deleteRidesForYesterday();
+			} catch (final Exception e) {
+				System.out.println("ein Error beim Loeschen ist aufgetreten, fahre fort");
+			}
 			System.out.println("Mitfahrgelegenheiten von gestern gelöscht");
 			// 24 Stunden schlafen
 			try {
 				TimeUnit.HOURS.sleep(hoursToSleep);
 			} catch (final InterruptedException e) {
-				e.printStackTrace();
+				System.out.println("ein Error beim Loeschen ist aufgetreten, fahre fort");
 			}
 		}
 	}
@@ -47,14 +50,12 @@ public class DeleteThread extends Thread {
 	/**
 	 * loescht alle Mitfahrgelegenheiten vom gestrigen Tag, damit der Indez
 	 * nicht stetig waechst
+	 *
+	 * @throws Exception
 	 */
-	private void deleteRidesForYesterday() {
+	private void deleteRidesForYesterday() throws Exception {
 		final Calendar yesterday = Calendar.getInstance();
 		yesterday.add(Calendar.DATE, -1);
-		try {
-			Delete.deleteWithOutClient(dateFormat.format(yesterday.getTime()));
-		} catch (final UnknownHostException e) {
-			e.printStackTrace();
-		}
+		Delete.deleteWithOutClient(dateFormat.format(yesterday.getTime()));
 	}
 }
